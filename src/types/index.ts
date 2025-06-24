@@ -43,6 +43,8 @@ export interface TableData {
   rows: Record<string, unknown>[];
   createdAt: Date;
   updatedAt: Date;
+  googleSheetId?: string;
+  lastSyncedAt?: Date;
 }
 
 export interface Theme {
@@ -83,6 +85,7 @@ export interface AppSettings {
   timeFormat: '12h' | '24h';
   currency: string;
   defaultHourlyRate?: number;
+  googleApiConfig?: GoogleApiConfig;
 }
 
 export interface CellMerge {
@@ -108,6 +111,24 @@ export interface ExportOptions {
     start: Date;
     end: Date;
   };
+}
+
+// Google Sheets interfaces
+export interface GoogleApiConfig {
+  clientId: string;
+  apiKey: string;
+  scopes: string[];
+}
+
+export interface GoogleSheetData {
+  sheetId: string;
+  title: string;
+  url: string;
+  lastUpdated: Date;
+}
+
+export interface GoogleSheetsImportResult extends ImportResult {
+  sheetData?: GoogleSheetData;
 }
 
 // export interface ClientTableProps {

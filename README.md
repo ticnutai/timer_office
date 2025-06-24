@@ -190,3 +190,76 @@ npm run build
 ---
 
 נבנה עם ❤️ בישראל 🇮🇱
+
+## הגדרת סנכרון עם Google Sheets
+
+כדי להשתמש בפונקציונליות הסנכרון עם Google Sheets, יש לבצע את הצעדים הבאים:
+
+### 1. יצירת פרויקט ב-Google Cloud Console
+
+1. היכנס ל-[Google Cloud Console](https://console.cloud.google.com/)
+2. צור פרויקט חדש או בחר פרויקט קיים
+3. לך ל-"APIs & Services" > "Library"
+4. חפש והפעל את "Google Sheets API"
+
+### 2. יצירת מפתח API ומזהה לקוח OAuth
+
+1. לך ל-"APIs & Services" > "Credentials"
+2. לחץ על "Create Credentials" ובחר "API Key"
+3. העתק את מפתח ה-API שנוצר
+4. לחץ שוב על "Create Credentials" ובחר "OAuth client ID"
+5. בחר "Web application" כסוג האפליקציה
+6. הוסף את הדומיינים המורשים:
+   - עבור פיתוח מקומי: `http://localhost:3000` ו-`http://localhost:5173`
+   - עבור סביבת הייצור: הוסף את הדומיין שלך
+7. הוסף URIs להפניה מחדש (Redirect URIs):
+   - עבור פיתוח מקומי: `http://localhost:3000` ו-`http://localhost:5173`
+   - עבור סביבת הייצור: הוסף את הדומיין שלך
+8. לחץ על "Create" והעתק את מזהה הלקוח (Client ID)
+
+### 3. הגדרת OAuth Consent Screen
+
+1. לך ל-"APIs & Services" > "OAuth consent screen"
+2. בחר את סוג המשתמש (User Type) - "External" או "Internal" בהתאם לצרכים שלך
+3. מלא את הפרטים הנדרשים:
+   - שם האפליקציה
+   - אימייל תמיכה
+   - לוגו (אופציונלי)
+   - דומיין האפליקציה
+4. הוסף את הסקופ `https://www.googleapis.com/auth/spreadsheets`
+5. הוסף משתמשי בדיקה אם בחרת "External"
+6. שמור את ההגדרות
+
+### 4. הגדרת משתני סביבה
+
+1. צור קובץ `.env` בתיקיית השורש של הפרויקט
+2. הוסף את המשתנים הבאים:
+```
+VITE_GOOGLE_API_KEY=your_google_api_key_here
+VITE_GOOGLE_CLIENT_ID=your_google_client_id_here
+```
+3. החלף את הערכים עם המפתחות שיצרת בצעדים הקודמים
+
+### 5. שימוש בסנכרון
+
+1. לחץ על לשונית "גוגל שיטס" בתפריט העליון
+2. התחבר לחשבון Google שלך
+3. הוסף גיליון קיים על ידי הכנסת ה-URL שלו או צור גיליון חדש
+4. קשר טבלה לגיליון או ייבא נתונים מהגיליון
+5. לחץ על "סנכרן" כדי לסנכרן את הנתונים בין הטבלה המקומית לגיליון Google
+
+## פתרון בעיות נפוצות
+
+### שגיאת "The given origin is not allowed for the given client ID"
+- ודא שהוספת את הדומיין הנכון (כולל פרוטוקול ופורט) ל-Authorized JavaScript origins ב-Google Cloud Console
+- בסביבת פיתוח מקומית, ודא שהוספת `http://localhost:3000` ו-`http://localhost:5173`
+
+### שגיאת "Google Sheets API לא זמין"
+- ודא שהפעלת את Google Sheets API בפרויקט שלך
+- ודא שמפתח ה-API ומזהה הלקוח נכונים
+- נסה להתחבר מחדש לחשבון Google
+
+### שגיאת "לא התקבל טוקן הזדהות"
+- ודא שהגדרת נכון את OAuth consent screen
+- ודא שהוספת את הסקופ `https://www.googleapis.com/auth/spreadsheets`
+- אם בחרת "External" כסוג משתמש, ודא שהוספת את המשתמש שלך כמשתמש בדיקה

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
+import { GoogleSheetsService } from '../components/GoogleSheetsService';
 import type {
   Client,
   TimeEntry,
@@ -10,6 +11,9 @@ import type {
   AppSettings,
   CellMerge,
   BackupData,
+  GoogleApiConfig,
+  GoogleSheetData,
+  GoogleSheetsImportResult,
 } from '../types';
 
 interface AppStore {
@@ -42,6 +46,16 @@ interface AppStore {
   updateTable: (id: string, updates: Partial<TableData>) => void;
   deleteTable: (id: string) => void;
   setCurrentTable: (id: string) => void;
+  
+  // Google Sheets
+  googleSheets: GoogleSheetData[];
+  updateGoogleApiConfig: (config: GoogleApiConfig) => void;
+  addGoogleSheet: (sheetData: GoogleSheetData) => void;
+  removeGoogleSheet: (sheetId: string) => void;
+  linkTableToGoogleSheet: (tableId: string, sheetId: string) => void;
+  unlinkTableFromGoogleSheet: (tableId: string) => void;
+  syncTableWithGoogleSheet: (tableId: string) => Promise<boolean>;
+  importFromGoogleSheet: (sheetId: string, createNewTable?: boolean) => Promise<GoogleSheetsImportResult>;
   
   // Themes
   currentTheme: Theme;
@@ -125,6 +139,7 @@ export const useStore = create<AppStore>()(
       settings: defaultSettings,
       cellMerges: [],
       backups: [],
+      googleSheets: [],
       
       // Client actions
       addClient: (name) => {
@@ -310,6 +325,194 @@ export const useStore = create<AppStore>()(
         set({ currentTableId: id });
       },
       
+      // Google Sheets actions
+      updateGoogleApiConfig: (config) => {
+        set((state) => ({
+          settings: {
+            ...state.settings,
+            googleApiConfig: config
+          }
+        }));
+      },
+      
+      addGoogleSheet: (sheetData) => {
+        set((state) => ({
+          googleSheets: [...state.googleSheets, sheetData]
+        }));
+      },
+      
+      removeGoogleSheet: (sheetId) => {
+        set((state) => ({
+          googleSheets: state.googleSheets.filter(sheet => sheet.sheetId !== sheetId),
+          // Also unlink any tables connected to this sheet
+          tables: state.tables.map(table => 
+            table.googleSheetId === sheetId 
+              ? { ...table, googleSheetId: undefined, lastSyncedAt: undefined } 
+              : table
+          )
+        }));
+      },
+      
+      linkTableToGoogleSheet: (tableId, sheetId) => {
+        set((state) => ({
+          tables: state.tables.map(table => 
+            table.id === tableId 
+              ? { ...table, googleSheetId: sheetId, lastSyncedAt: new Date() } 
+              : table
+          )
+        }));
+      },
+      
+      unlinkTableFromGoogleSheet: (tableId) => {
+        set((state) => ({
+          tables: state.tables.map(table => 
+            table.id === tableId 
+              ? { ...table, googleSheetId: undefined, lastSyncedAt: undefined } 
+              : table
+          )
+        }));
+      },
+      
+      syncTableWithGoogleSheet: async (tableId) => {
+        const state = get();
+        const table = state.tables.find(t => t.id === tableId);
+        const googleSheetId = table?.googleSheetId;
+        
+        if (!table || !googleSheetId) {
+          return false;
+        }
+        
+        try {
+          const updatedTable = await GoogleSheetsService.syncTableWithSheet(table, googleSheetId);
+          
+          if (updatedTable) {
+            get().updateTable(tableId, updatedTable);
+            return true;
+          }
+          
+          return false;
+        } catch (error) {
+          console.error('Error syncing with Google Sheet:', error);
+          return false;
+        }
+      },
+      
+      importFromGoogleSheet: async (sheetId, createNewTable = false) => {
+        try {
+          // קריאת נתונים מהגיליון
+          const values = await GoogleSheetsService.readSheet(sheetId);
+          
+          if (!values || values.length < 2) {
+            return {
+              success: false,
+              message: 'הגיליון ריק או לא מכיל מספיק נתונים',
+            };
+          }
+          
+          // השורה הראשונה היא כותרות
+          const headers = values[0];
+          
+          if (createNewTable) {
+            // יצירת טבלה חדשה
+            const sheetInfo = get().googleSheets.find(s => s.sheetId === sheetId);
+            
+            const columns = headers.map((header, index) => ({
+              id: `col${index}`,
+              label: header,
+              type: 'text' as const,
+              isVisible: true,
+              order: index,
+            }));
+            
+            // יצירת שורות נתונים
+            const rows = values.slice(1).map(rowValues => {
+              const row: Record<string, unknown> = { clientId: uuidv4() };
+              headers.forEach((header, index) => {
+                row[`col${index}`] = rowValues[index] || '';
+              });
+              return row;
+            });
+            
+            // יצירת טבלה חדשה
+            const newTable: TableData = {
+              id: uuidv4(),
+              name: sheetInfo?.title || 'טבלה מיובאת מגוגל שיטס',
+              type: 'regular',
+              columns,
+              rows,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              googleSheetId: sheetId,
+              lastSyncedAt: new Date(),
+            };
+            
+            set((state) => ({
+              tables: [...state.tables, newTable],
+              currentTableId: newTable.id,
+            }));
+            
+            return {
+              success: true,
+              message: 'הנתונים יובאו בהצלחה לטבלה חדשה',
+              importedCount: rows.length,
+            };
+          } else {
+            // עדכון טבלה קיימת
+            const currentTableId = get().currentTableId;
+            const currentTable = get().tables.find(t => t.id === currentTableId);
+            
+            if (!currentTable) {
+              return {
+                success: false,
+                message: 'לא נבחרה טבלה לייבוא',
+              };
+            }
+            
+            // יצירת מיפוי בין כותרות לעמודות
+            const columnMap = new Map<string, string>();
+            
+            currentTable.columns.forEach(col => {
+              const headerIndex = headers.findIndex(h => h === col.label);
+              if (headerIndex !== -1) {
+                columnMap.set(col.id, String(headerIndex));
+              }
+            });
+            
+            // יצירת שורות נתונים
+            const rows = values.slice(1).map(rowValues => {
+              const newRow: Record<string, unknown> = { clientId: uuidv4() };
+              
+              columnMap.forEach((headerIndex, colId) => {
+                const index = parseInt(headerIndex);
+                newRow[colId] = rowValues[index] || '';
+              });
+              
+              return newRow;
+            });
+            
+            // עדכון הטבלה הקיימת
+            get().updateTable(currentTableId, {
+              rows,
+              updatedAt: new Date(),
+              googleSheetId: sheetId,
+              lastSyncedAt: new Date(),
+            });
+            
+            return {
+              success: true,
+              message: 'הנתונים יובאו בהצלחה לטבלה הנוכחית',
+              importedCount: rows.length,
+            };
+          }
+        } catch (error) {
+          console.error('Error importing from Google Sheet:', error);
+          return {
+            success: false,
+            message: `שגיאה בייבוא: ${error instanceof Error ? error.message : 'שגיאה לא ידועה'}`,
+          };
+        }
+      },
+      
       // Theme actions
       setTheme: (theme) => {
         set({ currentTheme: theme });
@@ -411,6 +614,7 @@ export const useStore = create<AppStore>()(
           theme: state.currentTheme,
           settings: state.settings,
           cellMerges: state.cellMerges,
+          googleSheets: state.googleSheets,
           exportDate: new Date().toISOString(),
         };
       },
@@ -422,6 +626,7 @@ export const useStore = create<AppStore>()(
         if (data.theme) set({ currentTheme: data.theme as Theme });
         if (data.settings) set({ settings: data.settings as AppSettings });
         if (data.cellMerges) set({ cellMerges: data.cellMerges as CellMerge[] });
+        if (data.googleSheets) set({ googleSheets: data.googleSheets as GoogleSheetData[] });
       },
       
       clearAllData: () => {
@@ -439,6 +644,7 @@ export const useStore = create<AppStore>()(
           settings: defaultSettings,
           cellMerges: [],
           backups: [],
+          googleSheets: [],
         });
       },
     }),

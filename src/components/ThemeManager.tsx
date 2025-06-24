@@ -5,6 +5,10 @@ import { useStore } from '../store/useStore';
 import type { Theme } from '../types';
 import toast from 'react-hot-toast';
 
+interface ThemeManagerProps {
+  onClose?: () => void;
+}
+
 const presetThemes: Theme[] = [
   {
     id: 'default',
@@ -83,7 +87,7 @@ const presetThemes: Theme[] = [
   },
 ];
 
-export const ThemeManager: React.FC = () => {
+export const ThemeManager: React.FC<ThemeManagerProps> = ({ onClose }) => {
   const { currentTheme, customThemes, setTheme, addCustomTheme, deleteCustomTheme } = useStore();
   const [showModal, setShowModal] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -103,6 +107,9 @@ export const ThemeManager: React.FC = () => {
       root.style.setProperty(`--color-${key}`, value);
     });
     toast.success(`ערכת הנושא "${theme.name}" הוחלה בהצלחה`);
+    if (onClose) {
+      onClose();
+    }
   };
 
   const createCustomTheme = () => {

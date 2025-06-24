@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaEdit, FaTrash, FaCheck, FaTimes, FaEllipsisV } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaCheck, FaTimes, FaEllipsisV, FaGoogle, FaSync } from 'react-icons/fa';
 import { useStore } from '../../store/useStore';
 import toast from 'react-hot-toast';
 import { TableColumn } from '../../types';
+import GoogleSheetsManager from '../GoogleSheetsManager';
 
 interface ClientTableProps {
   tableId: string;
@@ -18,6 +19,8 @@ export const ClientTable: React.FC<ClientTableProps> = ({ tableId }) => {
     updateClient,
     deleteClient,
     updateTable,
+    googleSheets,
+    syncTableWithGoogleSheet
   } = useStore();
 
   const [editingClientId, setEditingClientId] = useState<string | null>(null);
@@ -25,6 +28,8 @@ export const ClientTable: React.FC<ClientTableProps> = ({ tableId }) => {
   const [selectedClients, setSelectedClients] = useState<Set<string>>(new Set());
   const [editingCell, setEditingCell] = useState<{ clientId: string; columnId: string } | null>(null);
   const [cellValue, setCellValue] = useState('');
+  const [showGoogleSheetsModal, setShowGoogleSheetsModal] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const tableRef = useRef<HTMLDivElement>(null);
 
   const currentTable = tables.find(t => t.id === tableId);
@@ -36,6 +41,10 @@ export const ClientTable: React.FC<ClientTableProps> = ({ tableId }) => {
   const visibleColumns = currentTable.columns
     .filter(col => col.isVisible)
     .sort((a, b) => a.order - b.order);
+
+  const linkedSheet = currentTable.googleSheetId 
+    ? googleSheets.find(s => s.sheetId === currentTable.googleSheetId)
+    : null;
 
   // Handle client name editing
   const startEditingClient = (clientId: string, currentName: string) => {
@@ -153,6 +162,29 @@ export const ClientTable: React.FC<ClientTableProps> = ({ tableId }) => {
     }
   };
 
+  // סנכרון עם גוגל שיטס
+  const handleSyncWithGoogleSheet = async () => {
+    if (!currentTable.googleSheetId) {
+      setShowGoogleSheetsModal(true);
+      return;
+    }
+
+    setIsSyncing(true);
+    try {
+      const success = await syncTableWithGoogleSheet(tableId);
+      if (success) {
+        toast.success('הטבלה סונכרנה בהצלחה עם גוגל שיטס');
+      } else {
+        toast.error('שגיאה בסנכרון הטבלה עם גוגל שיטס');
+      }
+    } catch (error) {
+      console.error('Error syncing with Google Sheet:', error);
+      toast.error('שגיאה בסנכרון הטבלה עם גוגל שיטס');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   return (
     <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
       {/* Table Header Actions */}
@@ -168,6 +200,19 @@ export const ClientTable: React.FC<ClientTableProps> = ({ tableId }) => {
               מחק {selectedClients.size} נבחרים
             </button>
           )}
+
+          <button
+            onClick={handleSyncWithGoogleSheet}
+            className={`px-4 py-2 ${currentTable.googleSheetId ? 'bg-green-500 hover:bg-green-600' : 'bg-blue-500 hover:bg-blue-600'} text-white rounded-lg transition-colors duration-200 flex items-center gap-2`}
+            disabled={isSyncing}
+          >
+            {isSyncing ? (
+              <FaSync className="animate-spin" />
+            ) : (
+              <FaGoogle />
+            )}
+            {currentTable.googleSheetId ? 'סנכרן עם גוגל שיטס' : 'קשר לגוגל שיטס'}
+          </button>
         </div>
       </div>
 
@@ -344,6 +389,38 @@ export const ClientTable: React.FC<ClientTableProps> = ({ tableId }) => {
           </tbody>
         </table>
       </div>
+
+      {/* Google Sheets Modal */}
+      <AnimatePresence>
+        {showGoogleSheetsModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+            >
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold text-gray-800">גוגל שיטס</h2>
+                  <button
+                    onClick={() => setShowGoogleSheetsModal(false)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <GoogleSheetsManager />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }; 

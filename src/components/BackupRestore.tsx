@@ -5,7 +5,11 @@ import { format } from 'date-fns';
 import { useStore } from '../store/useStore';
 import toast from 'react-hot-toast';
 
-export const BackupRestore: React.FC = () => {
+interface BackupRestoreProps {
+  onClose?: () => void;
+}
+
+export const BackupRestore: React.FC<BackupRestoreProps> = ({ onClose }) => {
   const { backups, createBackup, restoreBackup, deleteBackup, settings, exportData } = useStore();
   const [showRestoreModal, setShowRestoreModal] = useState(false);
   const [lastAutoBackup, setLastAutoBackup] = useState<Date | null>(null);
@@ -41,6 +45,9 @@ export const BackupRestore: React.FC = () => {
       restoreBackup(backupId);
       toast.success('הגיבוי שוחזר בהצלחה');
       setShowRestoreModal(false);
+      if (onClose) {
+        onClose();
+      }
     }
   };
 
@@ -55,6 +62,9 @@ export const BackupRestore: React.FC = () => {
         useStore.getState().importData(data);
         toast.success('הגיבוי יובא ושוחזר בהצלחה');
         setShowRestoreModal(false);
+        if (onClose) {
+          onClose();
+        }
       } catch (error) {
         toast.error('שגיאה בקריאת קובץ הגיבוי');
       }

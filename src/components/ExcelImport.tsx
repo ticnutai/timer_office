@@ -2,10 +2,9 @@ import React, { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import * as XLSX from 'xlsx';
 import { motion } from 'framer-motion';
-import { FaFileExcel, FaCheck, FaTimes } from 'react-icons/fa';
+import { FaFileExcel, FaCheck } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 import { useStore } from '../store/useStore';
-import { Client } from '../types';
 
 interface ExcelImportProps {
   onClose: () => void;
