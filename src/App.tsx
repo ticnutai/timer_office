@@ -9,6 +9,7 @@ import { ThemeManager } from './components/ThemeManager';
 import { BackupRestore } from './components/BackupRestore';
 import { ImportExport } from './components/ImportExport';
 import { Clients } from './components/Clients';
+import { TableSelector } from './components/TableSelector';
 import { useStore } from './store/useStore';
 
 function App() {
@@ -254,10 +255,7 @@ function App() {
               className="bg-white rounded-2xl shadow-lg p-6"
             >
               <h2 className="text-2xl font-bold text-gray-800 mb-6">טבלאות זמן עבודה</h2>
-              {/* Table components will be added here */}
-              <div className="text-center text-gray-500 py-12">
-                רכיב הטבלה יתווסף כאן
-              </div>
+              <TableSelector />
             </motion.section>
           </div>
         ) : (
