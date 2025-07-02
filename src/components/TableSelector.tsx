@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaPlus, FaTable, FaFileExcel, FaEdit, FaTrash } from 'react-icons/fa';
+import { FaPlus, FaTable, FaFileExcel, FaTrash } from 'react-icons/fa';
 import { useStore } from '../store/useStore';
 import toast from 'react-hot-toast';
 import { ExcelImportTable } from './ExcelImportTable';
