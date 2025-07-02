@@ -20,7 +20,7 @@ export const Timer: React.FC = () => {
 
   // Update elapsed time every second
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval>;
 
     if (timerState.isRunning && timerState.startTime) {
       interval = setInterval(() => {
@@ -61,12 +61,12 @@ export const Timer: React.FC = () => {
 
   const handlePause = () => {
     pauseTimer();
-    toast.info('הטיימר הושהה');
+    toast('הטיימר הושהה');
   };
 
   const handleResume = () => {
     resumeTimer();
-    toast.info('הטיימר ממשיך');
+    toast('הטיימר ממשיך');
   };
 
   const currentClient = clients.find(
