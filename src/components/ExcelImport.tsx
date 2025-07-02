@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import * as XLSX from 'xlsx';
 import { motion } from 'framer-motion';
-import { FaFileExcel, FaCheck, FaTimes } from 'react-icons/fa';
+import { FaFileExcel, FaCheck } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 import { useStore } from '../store/useStore';
-import { Client } from '../types';
+// import type as needed
 
 interface ExcelImportProps {
   onClose: () => void;
@@ -28,7 +28,7 @@ export const ExcelImport: React.FC<ExcelImportProps> = ({ onClose, onImportCompl
       const workbook = XLSX.read(arrayBuffer);
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
-      const data = XLSX.utils.sheet_to_json(worksheet);
+      const data = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet);
       
       if (data.length === 0) {
         toast.error('הקובץ ריק או לא מכיל נתונים תקינים');
@@ -39,7 +39,7 @@ export const ExcelImport: React.FC<ExcelImportProps> = ({ onClose, onImportCompl
       setPreviewData(data.slice(0, 5)); // Preview first 5 rows
       
       // Extract headers
-      const firstRow = data[0];
+      const firstRow = data[0] as Record<string, unknown>;
       const extractedHeaders = Object.keys(firstRow);
       setHeaders(extractedHeaders);
       
@@ -101,9 +101,6 @@ export const ExcelImport: React.FC<ExcelImportProps> = ({ onClose, onImportCompl
         if (!name) return; // Skip rows without name
         
         // Create client with mapped fields
-        const hourlyRateHeader = Object.keys(mappings).find(key => mappings[key] === 'hourlyRate');
-        const hourlyRate = hourlyRateHeader ? Number(row[hourlyRateHeader]) || undefined : undefined;
-        
         addClient(name);
         importedCount++;
       });
