@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { motion } from 'framer-motion';
-import { FaBolt, FaSearch, FaUsers } from 'react-icons/fa';
 import { Timer } from './components/Timer';
 import { Dashboard } from './components/Dashboard';
 import { AddClient } from './components/AddClient';
+import { AudioTranscriber } from './components/AudioTranscriber';
 import { ThemeManager } from './components/ThemeManager';
 import { BackupRestore } from './components/BackupRestore';
 import { ImportExport } from './components/ImportExport';
@@ -250,12 +250,23 @@ function App() {
             {/* Tables Section */}
             <motion.section
               initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
+              animate={{ opacity: 1, y: 0 }}
               className="bg-white rounded-2xl shadow-lg p-6"
             >
               <h2 className="text-2xl font-bold text-gray-800 mb-6">טבלאות זמן עבודה</h2>
               <TableSelector />
+            </motion.section>
+
+            {/* Audio Transcriber */}
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="bg-white rounded-2xl shadow-lg p-6 mt-8"
+            >
+              <h2 className="text-2xl font-bold text-gray-800 mb-6">תמלול אודיו (Whisper)</h2>
+              <AudioTranscriber />
             </motion.section>
           </div>
         ) : (
