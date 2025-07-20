@@ -1,9 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FaEdit, FaTrash, FaCheck, FaTimes, FaEllipsisV } from 'react-icons/fa';
+import React, { useState, useRef } from 'react';
+import { motion } from 'framer-motion';
+import { FaEdit, FaTrash, FaCheck, FaTimes } from 'react-icons/fa';
 import { useStore } from '../../store/useStore';
 import toast from 'react-hot-toast';
-import { TableColumn } from '../../types';
 
 interface ClientTableProps {
   tableId: string;
@@ -14,7 +13,6 @@ export const ClientTable: React.FC<ClientTableProps> = ({ tableId }) => {
     clients,
     tables,
     timeEntries,
-    addClient,
     updateClient,
     deleteClient,
     updateTable,
@@ -111,7 +109,7 @@ export const ClientTable: React.FC<ClientTableProps> = ({ tableId }) => {
   };
 
   // Get cell value
-  const getCellValue = (clientId: string, columnId: string) => {
+  const getCellValue = (clientId: string, columnId: string): string => {
     if (currentTable.type === 'timeTracking') {
       if (columnId === 'total') {
         const client = clients.find(c => c.id === clientId);
@@ -120,7 +118,7 @@ export const ClientTable: React.FC<ClientTableProps> = ({ tableId }) => {
       return getClientHours(clientId, columnId);
     } else {
       const row = currentTable.rows.find(r => r.clientId === clientId);
-      return row?.[columnId] || '';
+      return row && row[columnId] !== undefined ? String(row[columnId]) : '';
     }
   };
 
