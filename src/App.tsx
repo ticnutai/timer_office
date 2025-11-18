@@ -33,7 +33,7 @@ function App() {
   // Handle ESC key
   useEffect(() => {
     let escCount = 0;
-    let escTimer: NodeJS.Timeout;
+    let escTimer: ReturnType<typeof setTimeout>;
 
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
