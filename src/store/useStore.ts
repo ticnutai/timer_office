@@ -127,7 +127,7 @@ export const useStore = create<AppStore>()(
       backups: [],
       
       // Client actions
-      addClient: (name) => {
+      addClient: (name: string) => {
         const newClient: Client = {
           id: uuidv4(),
           name,
@@ -135,11 +135,11 @@ export const useStore = create<AppStore>()(
           createdAt: new Date(),
           updatedAt: new Date(),
         };
-        set((state) => ({ clients: [...state.clients, newClient] }));
+        set((state: AppStore) => ({ clients: [...state.clients, newClient] }));
       },
       
-      updateClient: (id, updates) => {
-        set((state) => ({
+      updateClient: (id: string, updates: Partial<Client>) => {
+        set((state: AppStore) => ({
           clients: state.clients.map((client) =>
             client.id === id
               ? { ...client, ...updates, updatedAt: new Date() }
@@ -148,20 +148,20 @@ export const useStore = create<AppStore>()(
         }));
       },
       
-      deleteClient: (id) => {
-        set((state) => ({
+      deleteClient: (id: string) => {
+        set((state: AppStore) => ({
           clients: state.clients.filter((client) => client.id !== id),
           timeEntries: state.timeEntries.filter((entry) => entry.clientId !== id),
         }));
       },
       
       // Time entry actions
-      addTimeEntry: (entry) => {
+      addTimeEntry: (entry: Omit<TimeEntry, 'id'>) => {
         const newEntry: TimeEntry = {
           ...entry,
           id: uuidv4(),
         };
-        set((state) => ({ timeEntries: [...state.timeEntries, newEntry] }));
+        set((state: AppStore) => ({ timeEntries: [...state.timeEntries, newEntry] }));
         
         // Update client total hours
         const duration = entry.duration / 3600; // Convert to hours
@@ -170,15 +170,15 @@ export const useStore = create<AppStore>()(
         });
       },
       
-      updateTimeEntry: (id, updates) => {
-        set((state) => ({
+      updateTimeEntry: (id: string, updates: Partial<TimeEntry>) => {
+        set((state: AppStore) => ({
           timeEntries: state.timeEntries.map((entry) =>
             entry.id === id ? { ...entry, ...updates } : entry
           ),
         }));
       },
       
-      deleteTimeEntry: (id) => {
+      deleteTimeEntry: (id: string) => {
         const entry = get().timeEntries.find((e) => e.id === id);
         if (entry) {
           const duration = entry.duration / 3600;
@@ -186,17 +186,17 @@ export const useStore = create<AppStore>()(
             totalHours: Math.max(0, (get().clients.find(c => c.id === entry.clientId)?.totalHours || 0) - duration),
           });
         }
-        set((state) => ({
+        set((state: AppStore) => ({
           timeEntries: state.timeEntries.filter((entry) => entry.id !== id),
         }));
       },
       
-      getClientTimeEntries: (clientId) => {
+      getClientTimeEntries: (clientId: string) => {
         return get().timeEntries.filter((entry) => entry.clientId === clientId);
       },
       
       // Timer actions
-      startTimer: (clientId) => {
+      startTimer: (clientId: string) => {
         set({
           timerState: {
             isRunning: true,
@@ -230,7 +230,7 @@ export const useStore = create<AppStore>()(
       },
       
       pauseTimer: () => {
-        set((state) => ({
+        set((state: AppStore) => ({
           timerState: {
             ...state.timerState,
             isRunning: false,
@@ -239,7 +239,7 @@ export const useStore = create<AppStore>()(
       },
       
       resumeTimer: () => {
-        set((state) => ({
+        set((state: AppStore) => ({
           timerState: {
             ...state.timerState,
             isRunning: true,
@@ -257,8 +257,8 @@ export const useStore = create<AppStore>()(
         });
       },
       
-      updateElapsedTime: (time) => {
-        set((state) => ({
+      updateElapsedTime: (time: number) => {
+        set((state: AppStore) => ({
           timerState: {
             ...state.timerState,
             elapsedTime: time,
@@ -267,7 +267,7 @@ export const useStore = create<AppStore>()(
       },
       
       // Table actions
-      addTable: (name, type) => {
+      addTable: (name: string, type: 'timeTracking' | 'regular') => {
         const newTable: TableData = {
           id: uuidv4(),
           name,
@@ -277,7 +277,7 @@ export const useStore = create<AppStore>()(
           createdAt: new Date(),
           updatedAt: new Date(),
         };
-        set((state) => {
+        set((state: AppStore) => { 
           const tables = [...state.tables, newTable];
           return {
             tables,
@@ -286,8 +286,8 @@ export const useStore = create<AppStore>()(
         });
       },
       
-      updateTable: (id, updates) => {
-        set((state) => ({
+      updateTable: (id: string, updates: Partial<TableData>) => {
+        set((state: AppStore) => ({
           tables: state.tables.map((table) =>
             table.id === id
               ? { ...table, ...updates, updatedAt: new Date() }
@@ -296,8 +296,8 @@ export const useStore = create<AppStore>()(
         }));
       },
       
-      deleteTable: (id) => {
-        set((state) => {
+      deleteTable: (id: string) => {
+        set((state: AppStore) => {
           const tables = state.tables.filter((table) => table.id !== id);
           const currentTableId = state.currentTableId === id
             ? tables[0]?.id || ''
@@ -306,57 +306,57 @@ export const useStore = create<AppStore>()(
         });
       },
       
-      setCurrentTable: (id) => {
+      setCurrentTable: (id: string) => {
         set({ currentTableId: id });
       },
       
       // Theme actions
-      setTheme: (theme) => {
+      setTheme: (theme: Theme) => {
         set({ currentTheme: theme });
       },
       
-      addCustomTheme: (theme) => {
+      addCustomTheme: (theme: Omit<Theme, 'id'>) => {
         const newTheme: Theme = {
           ...theme,
           id: uuidv4(),
         };
-        set((state) => ({
+        set((state: AppStore) => ({
           customThemes: [...state.customThemes, newTheme],
         }));
       },
       
-      deleteCustomTheme: (id) => {
-        set((state) => ({
+      deleteCustomTheme: (id: string) => {
+        set((state: AppStore) => ({
           customThemes: state.customThemes.filter((theme) => theme.id !== id),
         }));
       },
       
       // Settings actions
-      updateSettings: (updates) => {
-        set((state) => ({
+      updateSettings: (updates: Partial<AppSettings>) => {
+        set((state: AppStore) => ({
           settings: { ...state.settings, ...updates },
         }));
       },
       
       // Cell merge actions
-      addCellMerge: (merge) => {
+      addCellMerge: (merge: Omit<CellMerge, 'id'>) => {
         const newMerge: CellMerge = {
           ...merge,
           id: uuidv4(),
         };
-        set((state) => ({
+        set((state: AppStore) => ({
           cellMerges: [...state.cellMerges, newMerge],
         }));
       },
       
-      removeCellMerge: (id) => {
-        set((state) => ({
+      removeCellMerge: (id: string) => {
+        set((state: AppStore) => ({
           cellMerges: state.cellMerges.filter((merge) => merge.id !== id),
         }));
       },
       
       // Backup actions
-      createBackup: (type) => {
+      createBackup: (type: 'auto' | 'manual') => {
         const state = get();
         const backup: BackupData = {
           id: uuidv4(),
@@ -372,7 +372,7 @@ export const useStore = create<AppStore>()(
           },
         };
         
-        set((state) => {
+        set((state: AppStore) => {
           const backups = [...state.backups, backup];
           // Keep only last 10 backups
           if (backups.length > 10) {
@@ -382,7 +382,7 @@ export const useStore = create<AppStore>()(
         });
       },
       
-      restoreBackup: (backupId) => {
+      restoreBackup: (backupId: string) => {
         const backup = get().backups.find((b) => b.id === backupId);
         if (backup) {
           set({
@@ -395,8 +395,8 @@ export const useStore = create<AppStore>()(
         }
       },
       
-      deleteBackup: (id) => {
-        set((state) => ({
+      deleteBackup: (id: string) => {
+        set((state: AppStore) => ({
           backups: state.backups.filter((backup) => backup.id !== id),
         }));
       },
@@ -415,7 +415,7 @@ export const useStore = create<AppStore>()(
         };
       },
       
-      importData: (data) => {
+      importData: (data: Record<string, unknown>) => {
         if (data.clients) set({ clients: data.clients as Client[] });
         if (data.timeEntries) set({ timeEntries: data.timeEntries as TimeEntry[] });
         if (data.tables) set({ tables: data.tables as TableData[] });
