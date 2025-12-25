@@ -1,10 +1,11 @@
-import { type ChangeEvent, useEffect, useMemo, useState } from 'react';
+import { type ChangeEvent, type DragEvent, useEffect, useMemo, useState } from 'react';
 
 const MAX_FILE_SIZE_MB = 50;
 
 function App() {
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState('');
+  const [isDragActive, setIsDragActive] = useState(false);
 
   const fileUrl = useMemo(() => {
     if (!file) {
@@ -27,8 +28,7 @@ function App() {
     };
   }, [fileUrl]);
 
-  const onFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const selected = event.target.files?.[0];
+  const validateAndSetFile = (selected: File | undefined) => {
     setError('');
 
     if (!selected) {
@@ -51,6 +51,27 @@ function App() {
     }
 
     setFile(selected);
+  };
+
+  const onFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const selected = event.target.files?.[0];
+    validateAndSetFile(selected);
+  };
+
+  const onDrop = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragActive(false);
+    const selected = event.dataTransfer.files?.[0];
+    validateAndSetFile(selected);
+  };
+
+  const onDragOver = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragActive(true);
+  };
+
+  const onDragLeave = () => {
+    setIsDragActive(false);
   };
 
   const clearFile = () => {
@@ -78,7 +99,16 @@ function App() {
       <main className="mx-auto w-full max-w-6xl px-6 py-10">
         <section className="grid gap-6 lg:grid-cols-[1fr_360px]">
           <div className="space-y-4">
-            <div className="rounded-2xl border border-dashed border-white/20 bg-white/5 p-6">
+            <div
+              className={`rounded-2xl border border-dashed p-6 transition ${
+                isDragActive
+                  ? 'border-indigo-400 bg-indigo-500/10'
+                  : 'border-white/20 bg-white/5'
+              }`}
+              onDragOver={onDragOver}
+              onDragLeave={onDragLeave}
+              onDrop={onDrop}
+            >
               <label className="flex flex-col gap-3 text-sm text-slate-200">
                 <span className="text-base font-medium">בחירת קובץ PDF</span>
                 <input
@@ -88,6 +118,9 @@ function App() {
                   className="file:mr-4 file:rounded-xl file:border-0 file:bg-indigo-500 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-indigo-400"
                 />
               </label>
+              <p className="text-xs text-slate-400">
+                אפשר לגרור קובץ לכאן או ללחוץ לבחירה מהמחשב.
+              </p>
               {error ? (
                 <p className="mt-4 rounded-lg border border-red-400/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
                   {error}
